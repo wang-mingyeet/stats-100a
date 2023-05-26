@@ -1,0 +1,204 @@
+---
+title: "Stats 100A HW 3 Milestone 3"
+author: Mingye Wang, Kevin Liu
+output: html_document
+date: "2023-05-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+data <- read.csv("Spring23Hwk3RawDatamergedcleanedFINAL-NO-NAMES.csv")
+```
+
+## Section 1
+
+### 1.1 Data Introduction/Summary
+
+Continuous variables: *walk*, *landscape*
+
+Discrete with finite values: *pressure*, *transfer*, *stem*
+
+Discrete with potentially infinitely many values: *hamburger*
+
+```{r}
+data_summary <- data.frame(matrix(ncol = 6, nrow = 5))
+colnames(data_summary) <- colnames(data)[1:6]
+rownames(data_summary) = c("min", "max", "mean", "std", "median")
+
+for (b in colnames(data_summary))
+  {
+    data_summary[,b] <- c(min(data[,b]), max(data[,b]), mean(data[,b]), sd(data[,b]), median(data[,b]))
+  }
+
+data_summary
+```
+
+### 1.2 Empirical PMF for *pressure*
+
+```{r}
+pressure = data[,"pressure"]
+pressure_pmf = cbind(c(1,2,3,4), c(mean(pressure == 1), mean(pressure == 2), mean(pressure == 3), mean(pressure == 4)))
+colnames(pressure_pmf) <- c("X", "P(X)")
+
+pressure_mean <- 0
+for (i in seq(4))
+{
+  pressure_mean <- pressure_mean + pressure_pmf[i,1] * pressure_pmf[i,2]
+}
+pressure_mean
+
+pressure_sd <- 0
+for (i in seq(4))
+{
+  pressure_sd <- pressure_sd + pressure_pmf[i,1]^2 * pressure_pmf[i,2]
+}
+pressure_sd <- sqrt(pressure_sd - pressure_mean^2)
+pressure_sd
+```
+
+### 1.3 Empirical PMF for *stem*
+
+```{r}
+stem = data[,"stem"]
+stem_pmf = cbind(c(0,1), c(mean(stem == 0), mean(stem == 1)))
+colnames(stem_pmf) <- c("X", "P(X)")
+
+stem_mean <- 0
+for (i in seq(2))
+{
+  stem_mean <- stem_mean + stem_pmf[i,1] * stem_pmf[i,2]
+}
+stem_mean
+
+stem_sd <- 0
+for (i in seq(2))
+{
+  stem_sd <- stem_sd + stem_pmf[i,1]^2 * stem_pmf[i,2]
+}
+stem_sd <- sqrt(stem_sd - stem_mean^2)
+stem_sd
+```
+
+*stem* is a Bernoulli random variable, since it has only two outcomes: $0$ and $1$.
+
+### 1.4a Joint PMF of *pressure* and *stem*
+
+```{r}
+pressure_stem <- cbind(pressure, stem)
+ps_pmf <- matrix(ncol = 2, nrow = 4)
+colnames(ps_pmf) <- c("S = 0", "S = 1")
+rownames(ps_pmf) <- c("P = 1", "P = 2", "P = 3", "P = 4")
+for (i in seq(4))
+{
+  for (j in seq(2))
+  {
+    ps_pmf[i,j] <- mean((pressure == i) & (stem == (j-1)))
+  }
+}
+ps_pmf
+```
+
+### 1.4b Conditional empirical PMFs
+
+```{r}
+## Assume stem = 1
+p_s1 <- ps_pmf[,2] / sum(ps_pmf[,2])
+p_s1
+
+mean_p_s1 <- 0
+for (i in seq(4))
+{
+  mean_p_s1 <- mean_p_s1 + i * p_s1[i]
+}
+
+
+sd_p_s1 <- 0
+for (i in seq(4))
+{
+  sd_p_s1 <- sd_p_s1 + (i^2) * p_s1[i]
+}
+sd_p_s1 <- sqrt(sd_p_s1 - mean_p_s1^2)
+print(paste("Mean: ", mean_p_s1))
+print(paste("Sd: ", sd_p_s1))
+
+## Assume stem = 0
+p_s0 <- ps_pmf[,1] / sum(ps_pmf[,1])
+p_s0
+
+mean_p_s0 <- 0
+for (i in seq(4))
+{
+  mean_p_s0 <- mean_p_s0 + i * p_s0[i]
+}
+
+sd_p_s0 <- 0
+for (i in seq(4))
+{
+  sd_p_s0 <- sd_p_s0 + (i^2) * p_s0[i]
+}
+sd_p_s0 <- sqrt(sd_p_s0 - mean_p_s0^2)
+print(paste("Mean: ", mean_p_s0))
+print(paste("Sd: ", sd_p_s0))
+
+### Plots
+
+plot(seq(4), p_s1, pch = 18, col = "green", main = "Figure 1: PMF of pressure given stem", xlab = "pressure", ylab = "P(pressure)")
+points(seq(4), p_s0, pch = 19, col = "red")
+abline(v=mean_p_s1, col="green")
+abline(v=mean_p_s0, col="red")
+legend("topleft",legend = c("stem = 1", "stem = 0"), pch = c(18, 19), col = c("green", "red"))
+```
+
+There is some indication that *pressure* and *stem* have some correlation, because we would expect the conditional pmf's to be the same if they were independent. Evidently this is not the case, as the pmf's have differing values for each value of *pressure* depending on the given value of *stem*.
+
+## Section 2 
+
+### 2.1 Empirical pmf of *hamburger*
+
+```{r}
+hamburger <- data[,"hamburger"]
+burger_pmf <- matrix(ncol = 3, nrow = 9)
+rownames(burger_pmf) <- c("0","1","2","3","4","5","6",">6", "total")
+colnames(burger_pmf) <- c("obs", "freq", "th. prob.")
+
+burger_pmf[,1] <- c(sum(hamburger == 0), sum(hamburger == 1), sum(hamburger == 2), sum(hamburger == 3), sum(hamburger == 4), sum(hamburger == 5), sum(hamburger == 6), sum(hamburger > 6), length(hamburger))
+
+burger_pmf[,2] <- c(mean(hamburger == 0), mean(hamburger == 1), mean(hamburger == 2), mean(hamburger == 3), mean(hamburger == 4), mean(hamburger == 5), mean(hamburger == 6), mean(hamburger > 6), 1)
+
+hb_mean <- sum(hamburger) / length(hamburger)
+for (i in seq(7))
+{
+  burger_pmf[i,3] <- hb_mean ^ (i - 1) * exp(-1 * hb_mean) / factorial(i - 1)
+}
+burger_pmf[8, 3] <- 1 - sum(burger_pmf[1:7, 3])
+burger_pmf[9, 3] <- 1
+
+burger_pmf
+```
+
+### 2.2 Goodness of fit
+
+```{r}
+chi_sq <- matrix(ncol = 2, nrow = 9)
+colnames(chi_sq) <- c("(O - E)^2", "(O - E)^2 / E")
+for (i in seq(8))
+{
+  chi_sq[i,1] <- sqrt(length(hamburger) * burger_pmf[i, 3] - burger_pmf[i, 2])
+  chi_sq[i,2] <- chi_sq[i,1] / (length(hamburger) * burger_pmf[i, 3])
+}
+burger_pmf <- cbind(burger_pmf, chi_sq)
+
+burger_pmf
+```
+
+
+
+## Section 3
+
+## Section 4
+
+
+
